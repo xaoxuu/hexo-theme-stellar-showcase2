@@ -32,7 +32,8 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Commit and Push to output branch
         run: |
-          git checkout -b output || git checkout output
-          git add data.json
+          git fetch origin output || true
+          git checkout -B output
+          git add v2/data.json
           git commit -m "Update data.json from issues" || echo "No changes to commit"
-          git push origin output -f
+          git push -f origin output
