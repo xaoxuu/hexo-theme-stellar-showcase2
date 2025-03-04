@@ -63,24 +63,11 @@ async function processIssue(issue, config) {
     }
 
     logger('info', `Found JSON content in issue #${issue.number}`);
+    logger('labels', issue.labels);
     const jsonData = JSON.parse(jsonMatch[0]);
     jsonData.issue_number = issue.number;
-
-    // 处理无效示例的自动关闭
-    if (config.auto_close && config.invalid_label) {
-      const labels = issue.labels.map(label => label.name);
-      if (labels.includes(config.invalid_label)) {
-        const [owner, repo] = (config.repo || process.env.GITHUB_REPOSITORY).split('/');
-        await octokit.issues.update({
-          owner,
-          repo,
-          issue_number: issue.number,
-          state: 'closed'
-        });
-        logger('info', `Closed invalid issue #${issue.number}`);
-      }
-    }
-
+    jsonData.labels = issue.labels.map(label => label.name);
+    
     return jsonData;
   } catch (error) {
     handleError(error, `Error processing issue #${issue.number}`);
