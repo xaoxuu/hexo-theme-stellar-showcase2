@@ -3,9 +3,8 @@ issue_parser:
   enabled: true
   repo: xaoxuu/hexo-theme-stellar-showcase2 # 仓库持有者/仓库名
   sort: updated-desc # 排序，按最近更新，取消此项则按创建时间排序
-  label: "active"  # 用于标记有效示例的标签，取消此项则会提取所有 open 状态的 issue
-  invalid_label: "invalid"  # 用于标记无效示例的标签
-  auto_close: true  # 是否自动关闭无效示例
+  exclude: ["审核中", "非Stellar站点", "无法访问"]  # 黑名单标签，包含这些标签的 issue 将被过滤
+
 
 # 网站检查器配置
 site_checker:

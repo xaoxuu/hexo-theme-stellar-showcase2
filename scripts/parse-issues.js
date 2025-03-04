@@ -16,13 +16,8 @@ async function getIssues() {
   const params = {
     owner,
     repo,
-    state: 'all'
+    state: 'open'
   };
-
-  // 添加标签筛选
-  if (config.label) {
-    params.labels = config.label;
-  }
 
   // 添加排序
   if (config.sort === 'updated-desc') {
@@ -36,7 +31,15 @@ async function getIssues() {
 
   try {
     const { data: issues } = await octokit.issues.listForRepo(params);
-    return issues;
+    
+    // 过滤黑名单标签的 issues
+    const blacklistLabels = config.exclude || [];
+    const filteredIssues = issues.filter(issue => {
+      const issueLabels = issue.labels.map(label => label.name);
+      return !blacklistLabels.some(blacklistLabel => issueLabels.includes(blacklistLabel));
+    });
+    
+    return filteredIssues;
   } catch (error) {
     handleError(error, 'Error fetching issues');
     throw error;
