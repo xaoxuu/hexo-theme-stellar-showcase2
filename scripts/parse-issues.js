@@ -43,6 +43,7 @@ async function parseIssues() {
 
   try {
     const issues = await getIssues();
+    console.log(`Found ${issues.length} issues to process`);
     const parsedData = {
       version: 'v2',
       content: []
@@ -50,14 +51,18 @@ async function parseIssues() {
 
     for (const issue of issues) {
       try {
-        // 查找issue内容中的第一个JSON对象
-        const match = issue.body.match(/\{[^\}]*\}/m);
+        console.log(`Processing issue #${issue.number}`);
+        if (!issue.body) {
+          console.log(`Issue #${issue.number} has no body content, skipping...`);
+          continue;
+        }
+        // 使用更健壮的正则表达式匹配JSON对象
+        const match = issue.body.match(/\{[\s\S]*?\}/m);
         if (match) {
+          console.log(`Found JSON content in issue #${issue.number}`);
           const jsonData = JSON.parse(match[0]);
-          // 添加issue编号以便后续关联，但不保存到输出文件中
-          const issueNumber = issue.number;
-          // 删除issue_number字段
-          delete jsonData.issue_number;
+          // 添加issue编号以便后续关联
+          jsonData.issue_number = issue.number;
           parsedData.content.push(jsonData);
           
           // 处理无效示例的自动关闭
@@ -69,15 +74,18 @@ async function parseIssues() {
               await octokit.issues.update({
                 owner,
                 repo,
-                issue_number: issueNumber,
+                issue_number: issue.number,
                 state: 'closed'
               });
-              console.log(`Closed invalid issue #${issueNumber}`);
+              console.log(`Closed invalid issue #${issue.number}`);
             }
           }
+        } else {
+          console.log(`No JSON content found in issue #${issue.number}`);
         }
       } catch (error) {
-        console.error(`Error parsing JSON from issue #${issue.number}:`, error);
+        console.error(`Error processing issue #${issue.number}:`, error.message);
+        console.error('Issue body:', issue.body);
       }
     }
 
