@@ -67,8 +67,7 @@ async function processIssue(issue, config) {
     jsonData.issue_number = issue.number;
     jsonData.labels = issue.labels.map(label => ({
       name: label.name,
-      color: label.color,
-      description: label.description
+      color: label.color
     }));
     
     return jsonData;
