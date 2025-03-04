@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { loadConfig, logger, handleError, withRetry, validateSiteData } from './utils.js';
