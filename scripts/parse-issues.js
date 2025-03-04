@@ -63,10 +63,13 @@ async function processIssue(issue, config) {
     }
 
     logger('info', `Found JSON content in issue #${issue.number}`);
-    logger('info', `labels: ${JSON.stringify(issue.labels)}`);
     const jsonData = JSON.parse(jsonMatch[0]);
     jsonData.issue_number = issue.number;
-    jsonData.labels = issue.labels;
+    jsonData.labels = issue.labels.map(label => ({
+      name: label.name,
+      color: label.color,
+      description: label.description
+    }));
     
     return jsonData;
   } catch (error) {
