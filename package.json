@@ -1,0 +1,12 @@
+{
+  "name": "aidemo",
+  "version": "1.0.0",
+  "description": "A site showcase manager",
+  "type": "module",
+  "dependencies": {
+    "@octokit/rest": "latest",
+    "axios": "latest",
+    "cheerio": "latest",
+    "js-yaml": "latest"
+  }
+}
