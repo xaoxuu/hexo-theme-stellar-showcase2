@@ -4,7 +4,7 @@
   "description": "A site showcase manager",
   "type": "module",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@octokit/rest": "latest",
