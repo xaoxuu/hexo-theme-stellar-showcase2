@@ -23,6 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
+          npm install node-fetch@3
       - name: Check Sites and Update Labels
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

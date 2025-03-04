@@ -1,7 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import fs from 'fs';
 import path from 'path';
-import { loadConfig } from './utils.js';
+import { loadConfig, logger, handleError, writeJsonToFile } from './utils.js';
+import { PATHS } from './constants.js';
 import fetch from 'node-fetch';
 
 const octokit = new Octokit({
@@ -33,77 +34,87 @@ async function getIssues() {
     params.direction = 'desc';
   }
 
-  const { data: issues } = await octokit.issues.listForRepo(params);
-  return issues;
+  try {
+    const { data: issues } = await octokit.issues.listForRepo(params);
+    return issues;
+  } catch (error) {
+    handleError(error, 'Error fetching issues');
+    throw error;
+  }
+}
+
+async function processIssue(issue, config) {
+  try {
+    logger('info', `Processing issue #${issue.number}`);
+    if (!issue.body) {
+      logger('warn', `Issue #${issue.number} has no body content, skipping...`);
+      return null;
+    }
+
+    const match = issue.body.match(/```json\s*\{[\s\S]*?\}\s*```/m);
+    const jsonMatch = match ? match[0].match(/\{[\s\S]*?\}/m) : null;
+
+    if (!jsonMatch) {
+      logger('warn', `No JSON content found in issue #${issue.number}`);
+      return null;
+    }
+
+    logger('info', `Found JSON content in issue #${issue.number}`);
+    const jsonData = JSON.parse(jsonMatch[0]);
+    jsonData.issue_number = issue.number;
+
+    // 处理无效示例的自动关闭
+    if (config.auto_close && config.invalid_label) {
+      const labels = issue.labels.map(label => label.name);
+      if (labels.includes(config.invalid_label)) {
+        const [owner, repo] = (config.repo || process.env.GITHUB_REPOSITORY).split('/');
+        await octokit.issues.update({
+          owner,
+          repo,
+          issue_number: issue.number,
+          state: 'closed'
+        });
+        logger('info', `Closed invalid issue #${issue.number}`);
+      }
+    }
+
+    return jsonData;
+  } catch (error) {
+    handleError(error, `Error processing issue #${issue.number}`);
+    return null;
+  }
 }
 
 async function parseIssues() {
-  if (!loadConfig('issue_parser').enabled) {
-    console.log('Issue parser is disabled in config');
+  const config = loadConfig('issue_parser');
+  if (!config.enabled) {
+    logger('info', 'Issue parser is disabled in config');
     return;
   }
 
   try {
     const issues = await getIssues();
-    console.log(`Found ${issues.length} issues to process`);
+    logger('info', `Found ${issues.length} issues to process`);
+
     const parsedData = {
       version: 'v2',
       content: []
     };
 
     for (const issue of issues) {
-      try {
-        console.log(`Processing issue #${issue.number}`);
-        if (!issue.body) {
-          console.log(`Issue #${issue.number} has no body content, skipping...`);
-          continue;
-        }
-        // 使用更健壮的正则表达式匹配JSON对象
-        const match = issue.body.match(/\{[\s\S]*?\}/m);
-        if (match) {
-          console.log(`Found JSON content in issue #${issue.number}`);
-          const jsonData = JSON.parse(match[0]);
-          // 添加issue编号以便后续关联
-          jsonData.issue_number = issue.number;
-          parsedData.content.push(jsonData);
-          
-          // 处理无效示例的自动关闭
-          const config = loadConfig('issue_parser');
-          if (config.auto_close && config.invalid_label) {
-            const labels = issue.labels.map(label => label.name);
-            if (labels.includes(config.invalid_label)) {
-              const [owner, repo] = (config.repo || process.env.GITHUB_REPOSITORY).split('/');
-              await octokit.issues.update({
-                owner,
-                repo,
-                issue_number: issue.number,
-                state: 'closed'
-              });
-              console.log(`Closed invalid issue #${issue.number}`);
-            }
-          }
-        } else {
-          console.log(`No JSON content found in issue #${issue.number}`);
-        }
-      } catch (error) {
-        console.error(`Error processing issue #${issue.number}:`, error.message);
-        console.error('Issue body:', issue.body);
+      const processedData = await processIssue(issue, config);
+      if (processedData) {
+        parsedData.content.push(processedData);
       }
     }
 
-    // 确保输出目录存在
-    const outputDir = path.join(process.cwd(), 'v2');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    const outputPath = path.join(process.cwd(), PATHS.DATA);
+    if (writeJsonToFile(outputPath, parsedData)) {
+      logger('info', 'Successfully generated v2/data.json');
     }
 
-    // 将解析后的数据写入v2/data.json文件
-    const outputPath = path.join(outputDir, 'data.json');
-    fs.writeFileSync(outputPath, JSON.stringify(parsedData, null, 2));
-    console.log('Successfully generated v2/data.json');
-
   } catch (error) {
-    console.error('Error processing issues:', error);
+    handleError(error, 'Error processing issues');
     process.exit(1);
   }
 }
