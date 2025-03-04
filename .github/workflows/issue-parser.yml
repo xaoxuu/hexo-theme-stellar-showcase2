@@ -4,8 +4,6 @@ on:
   push:
   issues:
     types: [opened, edited]
-  watch:
-    types: [started]  # 监听 star 事件
 
 jobs:
   parse-issues:
