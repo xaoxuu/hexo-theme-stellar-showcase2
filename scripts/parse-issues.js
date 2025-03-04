@@ -2,9 +2,11 @@ import { Octokit } from '@octokit/rest';
 import fs from 'fs';
 import path from 'path';
 import { loadConfig } from './utils.js';
+import fetch from 'node-fetch';
 
 const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN
+  auth: process.env.GITHUB_TOKEN,
+  request: { fetch }
 });
 
 async function getIssues() {
