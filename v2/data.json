@@ -1,0 +1,28 @@
+{
+  "version": "v2",
+  "content": [
+    {
+      "title": "222",
+      "url": "https://xaoxuu.com",
+      "avatar": "",
+      "screenshot": "",
+      "description": "",
+      "issue_number": 2,
+      "labels": [
+        {
+          "name": "1.29.1",
+          "color": "ededed"
+        }
+      ]
+    },
+    {
+      "title": "333",
+      "url": "",
+      "avatar": "",
+      "screenshot": "",
+      "description": "",
+      "issue_number": 3,
+      "labels": []
+    }
+  ]
+}
